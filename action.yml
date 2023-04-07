@@ -17,8 +17,6 @@ inputs:
 
 runs:
   using: "composite"
-  env:
-      SHA: ${{ github.sha }}
   steps:
     - name: Setup system dependencies
       run: >
@@ -31,6 +29,7 @@ runs:
     - name: Declare short SHA
       shell: bash
       run: |
+        echo "SHA=${{ github.sha }}" >> $GITHUB_ENV
         echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
     - name: Install R
