@@ -106,7 +106,7 @@ runs:
         done
 
     - name: Run R script to write writeManifest
-      shell: base
+      shell: bash
       run: |
         # store multi-character delimiter
         delimiter=";;"
@@ -136,6 +136,7 @@ runs:
         git status
 
     - name: Commit changes
+      shell: bash
       run: |
         # store multi-character delimiter
         delimiter=";;"
@@ -159,5 +160,6 @@ runs:
         git commit -m "Update deployed apps @${{ env.sha_short }}"
 
     - name: Push to branch
+      shell: bash
       run: |
         git push origin ${{ inputs.name-of-branch }}
