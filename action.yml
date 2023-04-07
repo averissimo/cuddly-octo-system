@@ -19,6 +19,7 @@ runs:
   using: "composite"
   steps:
     - name: Setup system dependencies
+      shell: bash
       run: >
         sudo apt-get update && sudo apt-get install --yes
         libcurl4-openssl-dev
@@ -52,16 +53,19 @@ runs:
         install.packages(c("renv", "box"))
 
     - name: Setup git config
+      shell: bash
       run: |
         git config user.name "${{ github.actor }}"
         git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
 
     - name: Fetch branch if exists
       continue-on-error: true
+      shell: bash
       run: |
         git fetch origin ${{ inputs.name-of-branch }}
 
     - name: Checkout branch and cleanup (setup orphan if no branch exists)
+      shell: bash
       run: |
         if [ `git rev-parse --verify origin/$BRANCH_DEPLOY 2>/dev/null` ]
         then
@@ -72,6 +76,7 @@ runs:
         fi
 
     - name: Checkout Apps
+      shell: bash
       run: |
         # store multi-character delimiter
         delimiter=";;"
