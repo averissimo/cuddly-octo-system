@@ -77,7 +77,7 @@ runs:
 
         # Define the string to split
         text="inst/examples/app/analytics$delimiter"
-        text=${{ inputs.name-of-branch }}$delimiter
+        text=${{ inputs.path-to-shiny-apps }}$delimiter
 
         # Split the text based on the delimiter
         newarray=()
@@ -86,28 +86,23 @@ runs:
          text=${text#*"$delimiter"}
         done
 
-        echo $newarray
-
         # Print the words after the split
         for value in ${newarray[@]}
         do
           # Remove directories if they exist
           [ ! -d "$value" ] || git rm -rf $value
 
-          echo "checkout $SHA $value"
           # check out recent versions
           git checkout $SHA -- $value
-
-          echo "add $value"
 
           git add $value
 
           # dest=$(basename "$value")
 
-          # move to correct directory (root)
+          ## move to correct directory (root)
           # git mv $value $dest
 
-          #git add $dest
+          # git add $dest
         done
 
     - name: Debug the contents
