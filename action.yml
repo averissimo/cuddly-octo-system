@@ -4,8 +4,7 @@ inputs:
   path-to-shiny-app:  # id of input
     description: 'Path to location with app'
     required: true
-    default:
-      - ./
+    default: "./"
 
 outputs:
   random-number:
