@@ -105,6 +105,28 @@ runs:
           # git add $dest
         done
 
+    - name: Run R script to write writeManifest
+      shell: base
+      run: |
+        # store multi-character delimiter
+        delimiter=";;"
+
+        # Define the string to split
+        text="inst/examples/app/analytics$delimiter"
+        text=${{ inputs.path-to-shiny-apps }}$delimiter
+
+        # Split the text based on the delimiter
+        newarray=()
+        while [[ $text ]]; do
+         newarray+=( "${text%%"$delimiter"*}" )
+         text=${text#*"$delimiter"}
+        done
+
+        for value in ${newarray[@]}
+        do
+          APP_DIR=$value Rscript ${{ github.action_path }}/write_manifest.R
+        done
+
     - name: Debug the contents
       shell: bash
       run: |
@@ -112,3 +134,30 @@ runs:
         echo ${{ github.action_path }}
         ls ${{ github.action_path }}
         git status
+
+    - name: Commit changes
+      run: |
+        # store multi-character delimiter
+        delimiter=";;"
+
+        # Define the string to split
+        text="inst/examples/app/analytics$delimiter"
+        text=${{ inputs.path-to-shiny-apps }}$delimiter
+
+        # Split the text based on the delimiter
+        newarray=()
+        while [[ $text ]]; do
+         newarray+=( "${text%%"$delimiter"*}" )
+         text=${text#*"$delimiter"}
+        done
+
+        for value in ${newarray[@]}
+        do
+          git add $value
+        done
+
+        git commit -m "Update deployed apps @${{ env.sha_short }}"
+
+    - name: Push to branch
+      run: |
+        git push origin ${{ inputs.name-of-branch }}
