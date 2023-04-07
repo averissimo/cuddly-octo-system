@@ -58,17 +58,12 @@ runs:
         git config user.name "${{ github.actor }}"
         git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
 
-    - name: Fetch branch if exists
-      continue-on-error: true
-      shell: bash
-      run: |
-        git fetch origin ${{ inputs.name-of-branch }}
-
     - name: Checkout branch and cleanup (setup orphan if no branch exists)
       shell: bash
       run: |
         if [ `git rev-parse --verify origin/$BRANCH_DEPLOY 2>/dev/null` ]
         then
+           git fetch origin ${{ inputs.name-of-branch }}
            git checkout origin/${{ inputs.name-of-branch }} -b ${{ inputs.name-of-branch }}
         else
           git switch --orphan ${{ inputs.name-of-branch }}
@@ -91,14 +86,19 @@ runs:
          text=${text#*"$delimiter"}
         done
 
+        echo $newarray
+
         # Print the words after the split
         for value in ${newarray[@]}
         do
           # Remove directories if they exist
           [ ! -d "$value" ] || git rm -rf $value
 
+          echo "checkout $SHA $value"
           # check out recent versions
           git checkout $SHA -- $value
+
+          echo "add $value"
 
           git add $value
 
