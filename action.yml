@@ -72,7 +72,6 @@ runs:
            git checkout origin/${{ inputs.name-of-branch }} -b ${{ inputs.name-of-branch }}
         else
           git switch --orphan ${{ inputs.name-of-branch }}
-          git rm -rf .
         fi
 
     - name: Checkout Apps
