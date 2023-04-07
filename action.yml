@@ -111,10 +111,10 @@ runs:
           #git add $dest
         done
 
-      - name: Debug
-        shell: bash
-        run: |
-          ls -ln
-          echo ${{ github.action_path }}
-          ls ${{ github.action_path }}
-          git status
+    - name: Debug the contents
+      shell: bash
+      run: |
+        ls -ln
+        echo ${{ github.action_path }}
+        ls ${{ github.action_path }}
+        git status
