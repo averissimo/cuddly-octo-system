@@ -1,25 +1,116 @@
 name: 'Hello World'
 description: 'Greet someone'
 inputs:
-  path-to-shiny-app:  # id of input
-    description: 'Path to location with app'
-    required: true
+  path-to-shiny-apps:  # id of input
+    description: 'Path to locations of Shiny apps (separated by ";;")'
+    required: false
     default: "./"
-
-outputs:
-  random-number:
-    description: "Random number"
-    value: ${{ steps.random-number-generator.outputs.random-number }}
+    type: string
+  name-of-branch:
+    description: "Branch name to use"
+    default: "bot/rsconnect"
+    type: string
+  move-to-root:
+    description: "Move app parent folders to root"
+    default: false
+    type: boolean
 
 runs:
   using: "composite"
+  env:
+      SHA: ${{ github.sha }}
   steps:
-    - run: echo Hello ${{ inputs.who-to-greet }}.
+    - name: Setup system dependencies
+      run: >
+        sudo apt-get update && sudo apt-get install --yes
+        libcurl4-openssl-dev
+
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Declare short SHA
       shell: bash
-    - id: random-number-generator
-      run: echo "random-number=$(echo $RANDOM)" >> $GITHUB_OUTPUT
-      shell: bash
-    - run: echo "${{ github.action_path }}" >> $GITHUB_PATH
-      shell: bash
-    - run: echo $random-number
-      shell: bash
+      run: |
+        echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+    - name: Install R
+      uses: r-lib/actions/setup-r@v2
+      with:
+        r-version: ${{ matrix.config.r }}
+
+    - name: Cache packages
+      uses: actions/cache@v3
+      with:
+        path: ${{ env.RENV_PATHS_ROOT }}
+        key: ${{ runner.os }}-renv-${{ hashFiles('**/renv.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-renv-
+
+    - name: Install renv and box
+      if : always()
+      shell: Rscript {0}
+      run: |
+        install.packages(c("renv", "box"))
+
+    - name: Setup git config
+      run: |
+        git config user.name "${{ github.actor }}"
+        git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+
+    - name: Fetch branch if exists
+      continue-on-error: true
+      run: |
+        git fetch origin ${{ inputs.name-of-branch }}
+
+    - name: Checkout branch and cleanup (setup orphan if no branch exists)
+      run: |
+        if [ `git rev-parse --verify origin/$BRANCH_DEPLOY 2>/dev/null` ]
+        then
+           git checkout origin/${{ inputs.name-of-branch }} -b ${{ inputs.name-of-branch }}
+        else
+          git switch --orphan ${{ inputs.name-of-branch }}
+          git rm -rf .
+        fi
+
+    - name: Checkout Apps
+      run: |
+        # store multi-character delimiter
+        delimiter=";;"
+
+        # Define the string to split
+        text="inst/examples/app/analytics$delimiter"
+        text=${{ inputs.name-of-branch }}$delimiter
+
+        # Split the text based on the delimiter
+        newarray=()
+        while [[ $text ]]; do
+         newarray+=( "${text%%"$delimiter"*}" )
+         text=${text#*"$delimiter"}
+        done
+
+        # Print the words after the split
+        for value in ${newarray[@]}
+        do
+          # Remove directories if they exist
+          [ ! -d "$value" ] || git rm -rf $value
+
+          # check out recent versions
+          git checkout $SHA -- $value
+
+          git add $value
+
+          # dest=$(basename "$value")
+
+          # move to correct directory (root)
+          # git mv $value $dest
+
+          #git add $dest
+        done
+
+      - name: Debug
+        shell: bash
+        run: |
+          ls -ln
+          echo ${{ github.action_path }}
+          ls ${{ github.action_path }}
+          git status
